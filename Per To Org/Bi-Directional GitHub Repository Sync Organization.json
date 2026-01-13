@@ -1,0 +1,727 @@
+{
+  "name": "Bi-Directional GitHub Repository Sync Organization",
+  "nodes": [
+    {
+      "parameters": {
+        "owner": {
+          "__rl": true,
+          "mode": "list",
+          "value": "ptechfusion19"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "Org_Testing_Repo",
+          "mode": "name"
+        },
+        "events": [
+          "push"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.githubTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2208,
+        112
+      ],
+      "id": "879381f2-dc11-4c59-9f28-4e412f28cdac",
+      "name": "Github Trigger",
+      "webhookId": "91240bf0-4a48-4a6b-8dd1-27c4d4ffca0a",
+      "credentials": {
+        "githubApi": {
+          "id": "ZKGYvxYBw2xUEuaV",
+          "name": "GitHub Account2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "main-branch",
+              "leftValue": "={{ $json.body.ref }}",
+              "rightValue": "refs/heads/main",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "not-sync",
+              "leftValue": "={{ $json.body.head_commit.message }}",
+              "rightValue": "Sync from Repo",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -2016,
+        112
+      ],
+      "id": "570bd108-e702-42a1-b0f6-4fd74995b3e3",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "branch-name",
+              "name": "branchName",
+              "value": "=sync-from-repo-b-{{ $now.toMillis() }}",
+              "type": "string"
+            },
+            {
+              "id": "commit-message",
+              "name": "commitMessage",
+              "value": "={{ $('Github Trigger').item.json.body.head_commit.message }}",
+              "type": "string"
+            },
+            {
+              "id": "commit-sha",
+              "name": "commitSha",
+              "value": "={{ $('Github Trigger').item.json.body.after }}",
+              "type": "string"
+            },
+            {
+              "id": "author-name",
+              "name": "authorName",
+              "value": "={{ $('Github Trigger').item.json.body.head_commit.author.name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1808,
+        96
+      ],
+      "id": "42ce64a2-93a7-4ddd-849e-65270030242f",
+      "name": "Set Fields"
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/repos/Ramzanx0553/Per_Testing_Repo/git/refs/heads/main",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github.v3+json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -1600,
+        96
+      ],
+      "id": "1f29b3e5-6a48-4f7f-95ed-aec2c1d6b89b",
+      "name": "Get SHA",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "GwRnBVdtnmTa6pj8",
+          "name": "Header Auth Account 4 For Github"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.github.com/repos/Ramzanx0553/Per_Testing_Repo/git/refs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github.v3+json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "ref",
+              "value": "=refs/heads/{{ $('Set Fields').item.json.branchName }}"
+            },
+            {
+              "name": "sha",
+              "value": "={{ $json.object.sha }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -1408,
+        96
+      ],
+      "id": "79fd4ea4-9fa8-4daf-a072-3a41c1c905a9",
+      "name": "Create Branch",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "GwRnBVdtnmTa6pj8",
+          "name": "Header Auth Account 4 For Github"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/ptechfusion19/Org_Testing_Repo/commits/{{ $('Set Fields').item.json.commitSha }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github.v3+json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -1200,
+        96
+      ],
+      "id": "568d6aea-df14-4f6f-b674-4acd591d4902",
+      "name": "Get Commit Details",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "GwRnBVdtnmTa6pj8",
+          "name": "Header Auth Account 4 For Github"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "files",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -1008,
+        96
+      ],
+      "id": "edf2109f-faa5-40e9-8e4e-65e366265a52",
+      "name": "Split Out Files"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "not-deleted",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "removed",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -800,
+        96
+      ],
+      "id": "aaedc16a-f253-485c-9278-747c9b105d6b",
+      "name": "If Not Deleted"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/ptechfusion19/Org_Testing_Repo/contents/{{ encodeURIComponent($json.filename) }}?ref=main",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github.v3+json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -608,
+        80
+      ],
+      "id": "029ba2c9-88c6-40ef-a08a-45319640f082",
+      "name": "Get File Content",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "GwRnBVdtnmTa6pj8",
+          "name": "Header Auth Account 4 For Github"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/ptechfusion19/Org_Testing_Repo/contents/{{ encodeURIComponent($json.path) }}?ref={{ $('Set Fields').item.json.branchName }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github.v3+json"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -400,
+        80
+      ],
+      "id": "678bed19-d2a7-4321-b366-fff62c44ccfa",
+      "name": "Check If File Exists",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "GwRnBVdtnmTa6pj8",
+          "name": "Header Auth Account 4 For Github"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "file-exists",
+              "leftValue": "={{ $json.sha }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -208,
+        80
+      ],
+      "id": "48fb9032-b3b4-4227-b93c-661ae0a0e386",
+      "name": "If File Exists"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://api.github.com/repos/Ramzanx0553/Per_Testing_Repo/contents/{{ encodeURIComponent($('Get File Content').item.json.path) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github.v3+json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "message",
+              "value": "=Sync from Repo-B: {{ $('Set Fields').item.json.commitMessage }}"
+            },
+            {
+              "name": "content",
+              "value": "={{ $('Get File Content').item.json.content }}"
+            },
+            {
+              "name": "branch",
+              "value": "={{ $('Set Fields').item.json.branchName }}"
+            },
+            {
+              "name": "sha",
+              "value": "={{ $json.sha }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        0,
+        -32
+      ],
+      "id": "5281c315-34e3-48cb-af2c-73fdd5441416",
+      "name": "Update Existing File",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "GwRnBVdtnmTa6pj8",
+          "name": "Header Auth Account 4 For Github"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://api.github.com/repos/Ramzanx0553/Per_Testing_Repo/contents/{{ encodeURIComponent($('Get File Content').item.json.path) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github.v3+json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "message",
+              "value": "=Sync from Repo-B: {{ $('Set Fields').item.json.commitMessage }}"
+            },
+            {
+              "name": "content",
+              "value": "={{ $('Get File Content').item.json.content }}"
+            },
+            {
+              "name": "branch",
+              "value": "={{ $('Set Fields').item.json.branchName }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        0,
+        176
+      ],
+      "id": "ec2e9ae3-1336-4af0-8144-c6bda2748016",
+      "name": "Create New File",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "GwRnBVdtnmTa6pj8",
+          "name": "Header Auth Account 4 For Github"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        208,
+        80
+      ],
+      "id": "ae5ed9f1-9c94-45e6-806f-87c909faf0b5",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.github.com/repos/Ramzanx0553/Per_Testing_Repo/pulls",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github.v3+json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "=🔄 Sync from Organizational Repo: {{ $('Set Fields').item.json.commitMessage }}"
+            },
+            {
+              "name": "body",
+              "value": "=## Automated Sync from OrganRepository\n\n**Commit Message:** {{ $('Set Fields').item.json.commitMessage }}\n\n**Commit SHA:** {{ $('Set Fields').item.json.commitSha }}\n\n**Author:** {{ $('Set Fields').item.json.authorName }}\n\n---\n*Auto-generated by n8n workflow*"
+            },
+            {
+              "name": "base",
+              "value": "main"
+            },
+            {
+              "name": "head",
+              "value": "={{ $('Set Fields').item.json.branchName }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        400,
+        80
+      ],
+      "id": "827df298-38d3-4723-9c85-9eb3f7079fa5",
+      "name": "Create PR",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "GwRnBVdtnmTa6pj8",
+          "name": "Header Auth Account 4 For Github"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Github Trigger": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Set Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Fields": {
+      "main": [
+        [
+          {
+            "node": "Get SHA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get SHA": {
+      "main": [
+        [
+          {
+            "node": "Create Branch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Branch": {
+      "main": [
+        [
+          {
+            "node": "Get Commit Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Commit Details": {
+      "main": [
+        [
+          {
+            "node": "Split Out Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out Files": {
+      "main": [
+        [
+          {
+            "node": "If Not Deleted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Not Deleted": {
+      "main": [
+        [
+          {
+            "node": "Get File Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get File Content": {
+      "main": [
+        [
+          {
+            "node": "Check If File Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If File Exists": {
+      "main": [
+        [
+          {
+            "node": "If File Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If File Exists": {
+      "main": [
+        [
+          {
+            "node": "Update Existing File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create New File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Existing File": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create New File": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Create PR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d09c89f9-9817-4fce-8189-88fe657f7ef5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "151305d708accaf9ba7df3ae300984e7c14a108b131ed2d081a3bd48f670f5c4"
+  },
+  "id": "HwigBpH1uFMTcHyP",
+  "tags": [
+    {
+      "updatedAt": "2026-01-12T04:43:33.510Z",
+      "createdAt": "2026-01-12T04:43:33.510Z",
+      "id": "jx9YrtWBKdpnvTKB",
+      "name": "github"
+    }
+  ]
+}
