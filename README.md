@@ -1,4 +1,4 @@
-                                                     # Bi-Directional GitHub Repository Sync Automation
+                                          ## Bi-Directional GitHub Repository Sync Automation
 ## Description
 This project implements a comprehensive automation workflow in n8n that enables seamless two-way synchronization between GitHub repositories across different ownership types. 
 The solution supports synchronization between personal and organizational repositories in all possible combinations.
